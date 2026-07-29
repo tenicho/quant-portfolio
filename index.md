@@ -1,39 +1,41 @@
-# Quantitative Research Portfolio
+---
+layout: single
+title: "Taylor Nichols"
+author_profile: true
+---
 
-Welcome to my quantitative finance research portfolio.
+## Quantitative Research Portfolio
 
-I develop systematic trading strategies using:
+*Algorithmic Trading • Machine Learning • Systematic Investing*
 
-- Statistical modeling
-- Machine learning
-- Financial data analysis
-- Portfolio construction
+---
 
-
-## Trading Strategies
+## Featured Strategies
 
 ### Rules-Based Momentum
 
-A systematic momentum strategy using quantitative signals,
-portfolio construction rules, and historical backtesting.
+A systematic momentum strategy using quantitative signals, portfolio construction rules, and historical backtesting.
 
-[View Strategy](strategies/rules-based-momentum)
-
+[Research →](/strategies/rules-based-momentum/){: .btn .btn--primary} [Code →](https://github.com/tenicho/rules-based-momentum){: .btn .btn--inverse}
 
 ### ML Trend + Momentum
 
-A supervised machine learning approach combining
-trend detection and momentum factors.
+A supervised machine learning approach combining trend detection and momentum factors.
 
-[View Strategy](strategies/ml-trend-momentum)
+[Research →](/strategies/ml-trend-momentum/){: .btn .btn--primary} [Code →](https://github.com/tenicho/ml-trend-momentum){: .btn .btn--inverse}
 
+---
 
 ## Research Notes
 
-Research covering:
+### Transaction Costs
 
-- Transaction Cost Modeling
-- Financial Data Cleaning
-- Feature Engineering
-- Walk-Forward Validation
-- Risk Management
+Modeling execution costs, slippage, and market impact in realistic backtests.
+
+[Read →](/research/transaction-costs/)
+
+### Data Cleaning
+
+Handling missing data, corporate actions, and survivorship bias in financial datasets.
+
+[Read →](/research/data-cleaning/)

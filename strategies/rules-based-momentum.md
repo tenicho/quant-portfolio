@@ -1,4 +1,8 @@
-# Rules-Based Momentum Strategy
+---
+layout: single
+title: "Rules-Based Momentum"
+permalink: /strategies/rules-based-momentum/
+---
 
 ## Overview
 

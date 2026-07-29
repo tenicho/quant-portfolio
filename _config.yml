@@ -1,10 +1,17 @@
-title: Taylor Nichols Quantitative Research
+title: "Taylor Nichols Quantitative Research"
 
 description: >
-  Quantitative research portfolio featuring algorithmic trading strategies,
-  machine learning models, and systematic investing research.
+  Algorithmic trading, machine learning, and quantitative finance research.
 
-theme: minima
+remote_theme: "mmistakes/minimal-mistakes"
+
+minimal_mistakes_skin: "default"
+
+search: true
 
 author:
-  name: Taylor Nichols
+  name: "Taylor Nichols"
+
+plugins:
+  - jekyll-remote-theme
+  - jekyll-include-cache

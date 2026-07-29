@@ -1,4 +1,8 @@
-# Transaction Cost Modeling
+---
+layout: single
+title: "Transaction Costs"
+permalink: /research/transaction-costs/
+---
 
 ## Overview
 

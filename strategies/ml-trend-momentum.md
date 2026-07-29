@@ -1,4 +1,8 @@
-# ML Trend + Momentum Strategy
+---
+layout: single
+title: "ML Trend + Momentum"
+permalink: /strategies/ml-trend-momentum/
+---
 
 ## Overview
 

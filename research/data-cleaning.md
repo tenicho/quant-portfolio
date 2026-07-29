@@ -1,4 +1,8 @@
-# Financial Data Cleaning
+---
+layout: single
+title: "Data Cleaning"
+permalink: /research/data-cleaning/
+---
 
 ## Overview
 
