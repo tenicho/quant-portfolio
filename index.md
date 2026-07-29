@@ -1,7 +1,6 @@
 ---
 layout: single
 title: "Taylor Nichols"
-author_profile: true
 ---
 
 ## Quantitative Research Portfolio
