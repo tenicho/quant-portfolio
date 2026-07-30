@@ -31,3 +31,7 @@ Potential models:
 ## Results
 
 Performance results coming soon.
+
+## Code Repository
+
+[View on GitHub →](https://github.com/tenicho/ml-trend-momentum)
