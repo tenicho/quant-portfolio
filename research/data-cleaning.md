@@ -4,11 +4,13 @@ title: "Data Cleaning"
 permalink: /research/data-cleaning/
 ---
 Before any of the modelling was worth doing, I had to build a dataset I actually trusted. This is
-what that took: 27.7 million daily bars of US equities from 2003 to 2026, and the five problems I
-had to work through to get there.
+the second attempt. The first one — 27.7 million bars from a retail price API — I threw away, after
+discovering that the survivorship fix I'd been relying on for months only worked for the last third
+of the history.
 
-Two of them I knew about going in. Two I found by accident. One I found late enough that it forced
-me to re-read results I'd already accepted.
+This is what the rebuild took: 41.8 million daily bars from 1998 to 2026, and the five problems
+that had to be closed to get there. Two I knew about going in. Two I found by accident. One I only
+found because a chart looked wrong.
 
 I'm writing this partly so I remember why the data is shaped the way it is, and partly because most
 of these problems are invisible until they've already ruined a backtest.
@@ -17,318 +19,323 @@ of these problems are invisible until they've already ruined a backtest.
 
 ## What's in it
 
-|                           |                                                                    |
-| ------------------------- | ------------------------------------------------------------------ |
-| Coverage                  | 2003-01-02 to 2026-06-24, 5,906 trading days                       |
-| Rows                      | 27,674,679 daily bars                                              |
-| Listings                  | 12,762                                                             |
-| Clean operating companies | 7,892                                                              |
-| Sources                   | Financial Modeling Prep for prices, SEC EDGAR for company identity |
+|                    |                                                                                          |
+| ------------------ | ---------------------------------------------------------------------------------------- |
+| Coverage           | 1998-01-02 to 2026-07-31, 7,188 trading sessions                                         |
+| Rows               | 41,804,033 daily bars                                                                    |
+| Listings           | 19,023                                                                                   |
+| Delisted listings  | 13,288 —**70% of the panel**                                                      |
+| Securities tracked | 21,936, of which 15,628 are delisted                                                     |
+| Source             | [Sharadar](https://sharadar.com) — prices, corporate actions, metadata, index membership |
 
-![Listings trading per day](/assets/images/research/data-cleaning/01-listings-per-day.png)
+![Listings priced per session](/assets/images/research/data-cleaning/01-listings-per-session.png)
 
-That's the raw count before any filtering — every symbol the vendor returned a price for. Getting
-from there to something tradable is most of the work below.
+That curve is the first thing I check on any equity dataset, and it's the cheapest lie detector
+there is. It should **fall** — 7,888 listings in 1998, down to a trough of 4,906 in 2017, then the
+2021 SPAC spike, then down again. The US had far more listed companies in 1998 than today, and a
+dataset that doesn't show that has quietly deleted everything that died.
+
+My previous dataset rose toward the present. I looked at that chart for months without registering
+what it meant.
+
+---
+
+## Why there was a second attempt
+
+The first build used a retail market-data API. Its universe came from an "active tickers" list plus
+a separate "delisted" endpoint, and I combined them in the right order, and wrote *survivorship
+clean* in my notes, and moved on.
+
+Then I plotted delistings by year. Almost nothing before 2015, then a wall of them from 2021.
+
+That isn't what markets do. 2008 and 2009 should be visible from a mile away. So I checked the
+delisted list directly: roughly 40 companies for 2002–2015, roughly 9,100 for 2016–2026. The list
+effectively began in 2016.
+
+A second test, from the other direction — of the names trading in a given year, how many were still
+trading at the end of the panel? Roughly half of US listed companies disappear within a decade, so
+old cohorts should show *low* survival:
+
+| cohort | still trading at panel end |
+| ------ | -------------------------- |
+| 2004   | **71.5%**            |
+| 2008   | 69.5%                      |
+| 2012   | 67.3%                      |
+| 2016   | 63.2%                      |
+| 2022   | 56.1%                      |
+
+71.5% survival over 22 years isn't believable, and the trend runs backwards: older cohorts survived
+*more*, despite having more time to die. That only happens when the deaths are missing.
+
+The lesson I took wasn't "that vendor is bad." It was that I had **checked survivorship, satisfied
+myself, and moved on — without ever writing a test that could fail.** I caught it because a chart
+looked wrong, which is not a process.
+
+So the rebuild had one requirement above all others: every claim about the data has to be
+falsifiable from the data itself.
 
 ---
 
 ## Problem 1: dead companies
 
-If you download "all US stocks" from a data vendor, you get the ones that still exist. Companies
-that went bankrupt, got bought, or were kicked off the exchange are just gone.
+If you download "all US stocks," you get the ones that still exist. Companies that went bankrupt,
+got bought, or were kicked off the exchange are simply absent.
 
-Backtest on that and your strategy **never once buys a stock that went to zero**. It picks only from
-companies that made it — which is information nobody had at the time. The effect is not subtle.
-Failure is a real outcome, and if you delete it from the sample, everything looks better than it was.
+Backtest on that and your strategy **never once buys a stock that went to zero**. It picks only
+from companies that made it — which is information nobody had at the time. Failure is a real
+outcome, and deleting it from the sample makes everything look better than it was.
 
-The fix is to build the universe from **active plus delisted**, in that order, before anything else
-runs. I pull the vendor's delisted list first and cache it, then combine it with the active list,
-then pull prices for the whole thing. A dead company's history simply ends at its last trade.
+**13,288 of 19,023 listings here stop trading before the panel ends. 70% of the panel.** And they
+are spread across the whole history, not bunched into recent years:
 
-Order matters here. Build the universe from the active list alone and every later stage inherits the
-bias — no amount of cleaning gets it back.
+![Delistings per year](/assets/images/research/data-cleaning/02-delistings-per-year.png)
 
-![Survivorship: dead vs surviving listings](/assets/images/research/data-cleaning/02-survivorship.png)
+A median year sees 432 delistings, ranging from 274 (2014) to 1,299 (2023). That's a plausible
+shape for US equities. The previous dataset had roughly 40 for an entire *decade*.
 
-6,222 listings stop trading before the panel ends — 48.8% of everything in it. The right panel is
-the part I find most useful: names that died lasted a median of 2.8 years, names that survived 8.7.
-That short-lived population is exactly what a biased dataset quietly removes.
+The same fact from the other side — how much of each session's universe eventually dies:
 
-### The catch, which I found late
+![Live listings that later stopped trading](/assets/images/research/data-cleaning/03-live-listings-that-died.png)
 
-Look at the left panel again. Almost nothing before 2015, then a wall of delistings from 2021.
+**82.7% of the listings trading in 1998 eventually stopped trading.** Still 60.0% for 2010. That
+population — the one a survivor-only dataset silently removes — is the majority of the early panel,
+not a footnote.
 
-That's not what markets do. 2008 and 2009 should be visible from here.
+One artifact worth explaining: the red line falls to zero at the right edge. That's mechanical, not
+a bug. A company still trading today isn't flagged as delisted *yet*, so as you approach the end of
+the panel there's less and less future left in which to die.
 
-So I went and checked the vendor's delisted list directly:
+### The test that would have caught it the first time
 
-| period     | companies in the list |
-| ---------- | --------------------- |
-| 2002–2015 | about 40              |
-| 2016–2026 | about 9,100           |
+The single sharpest check I have is this: ask the dataset for the S&P 500 as it stood on
+**12 September 2008** — the Friday before Lehman Brothers filed.
 
-The US had hundreds of delistings a year through the 2000s. The list basically starts in 2016.
+It returns 500 names. One of them is Lehman, with a real price bar at **$3.65**, which is what
+Lehman actually closed at that day.
 
-I tested it a second way — of the names trading in a given year, how many are still trading at the
-end of the panel? Roughly half of US listed companies disappear within a decade, so an old cohort
-should show low survival:
-
-| cohort | still trading in 2026 |
-| ------ | --------------------- |
-| 2004   | **71.5%**       |
-| 2008   | 69.5%                 |
-| 2012   | 67.3%                 |
-| 2016   | 63.2%                 |
-| 2022   | 56.1%                 |
-
-71.5% survival over 22 years isn't believable. And the trend runs the wrong way — older cohorts
-survive *more*, when they've had more time to die. That only happens if the deaths are missing.
-
-Third check: the panel has 2,660 listings in 2004. The real market had roughly 5,000 operating
-companies. I have about half of them.
-
-**So survivorship is fixed from about 2016 onward, and not before.** I'd written "survivorship
-clean" in my own notes for months before catching this.
-
-One thing that isn't obvious: the direction of the bias depends on which universe you're in. Missing
-*failures* makes returns look better. But among liquid names, most exits are *acquisitions*, and
-those usually complete at a premium — missing those makes returns look worse. In small caps the
-failure effect dominates and the bias is clearly optimistic. In a liquid universe the net sign is
-genuinely unclear.
-
-Closing this properly needs a delisting source with real historical depth. CRSP is the standard, and
-this is exactly why.
+That one row is worth more than any summary statistic. A survivor-biased dataset physically cannot
+produce it.
 
 ---
 
 ## Problem 2: recycled ticker symbols
 
-Ticker symbols get reused. A company delists, its symbol goes back in the pool, and years later
-somebody else gets it.
+Ticker symbols get reused. A company delists, its symbol returns to the pool, and years later
+somebody else gets it. Stitch those together naively and one price series jumps between two
+unrelated businesses — every moving average, return, and forward label spanning the join is
+measuring nothing.
 
-Stitch those together naively and you have one price series that jumps between two unrelated
-businesses. Any moving average, return, or forward label spanning the join is measuring nothing.
+My first build handled this with a dormancy heuristic: more than 90 days without trading, and what
+follows is treated as a different listing. It worked, but it was a guess, and anything joining by
+ticker afterwards had to know about the synthetic suffixes.
 
-760 listings here are affected. The fix is a dormancy rule: more than 90 days with no trading and
-what follows is treated as a different listing —
+The rebuild gets this for free, because the vendor solves it at the source. A reused symbol keeps
+the *live* company on the clean ticker and gives the dead one a numeric suffix — Bear Stearns is
+`BSC1`, not `BSC`. And every security carries a `permaticker`, a permanent id that survives ticker
+changes, so history is rewired onto the new symbol rather than fragmented.
 
-```
-SYM      first company
-SYM__1   second company
-```
-
-They're separate rows everywhere downstream, so nothing ever spans two companies.
-
-The gotcha is that anything joined by ticker afterwards — splits, fundamentals, anything — has to
-strip the suffix first. 12,762 listings, but only 12,064 distinct base symbols.
+The heuristic is gone. That's ~40 lines of my code deleted and replaced by a vendor guarantee I can
+check.
 
 ---
 
 ## Problem 3: things that aren't stocks
 
-The vendor's "US equities" list contains a lot that isn't a company: ETFs, closed-end funds, ETNs,
-SPACs, commodity trusts, warrants, units, preferred shares, exchange test tickers.
+The universe contains a great deal that isn't a company: ETFs, closed-end funds, ETNs, commodity
+trusts, warrants, units, preferred shares. Leave them in and your stock-picking model is partly
+picking index funds.
 
-Leave them in and your stock-picking model is partly picking index funds.
+My first build resolved every ticker to an SEC CIK and classified entities by what they *filed* —
+a five-condition test, three-rung matching ladder, thousands of EDGAR requests, 2,075 listings still
+unresolved at the end. It was the single largest piece of code in the pipeline, and it existed
+because the price vendor shipped no usable security-type field.
 
-I filter twice. First on symbol patterns, which catches the structural stuff — test tickers,
-warrants, units, preferreds — while keeping legitimate class shares like BRK-A.
+The new source ships `category` and `exchange` as explicit metadata. The filter is a set membership
+test. 19,665 of 21,936 securities are common stock or ADRs on a US exchange.
 
-The second pass is the real one, and it uses SEC filings. Every ticker gets resolved to an SEC CIK,
-and then the test is what that entity actually **files**:
+I'm noting this because it's the least glamorous kind of progress and probably the most valuable:
+**most data-cleaning code exists to compensate for a missing field.** Getting the field deletes the
+code.
 
-```
-operating company  if  files 10-K / 10-Q / 20-F / 40-F
-                  and  files no N-series or 497/485 fund forms
-                  and  SIC is not a fund, commodity ETP, or blank check
-                  and  name isn't fund-like
-                  and  ticker isn't on the vendor's ETF list
-```
-
-Five conditions looks paranoid until you hit the case that motivated it: commodity ETPs like GLD and
-USO **do** file 10-Ks. The first test alone lets them straight through. It takes the SIC code, the
-name check, and the ETF list to catch them.
-
-Getting to a CIK at all is harder than it sounds, because the free ticker-to-CIK files only cover
-*active* filers — and half my listings are dead. So it's a three-rung ladder: exact ticker match,
-then exact company-name match against SEC's all-filers-ever file, then a fuzzy name match. Whatever
-doesn't resolve stays unresolved rather than getting a guess.
-
-| method               | listings        |
-| -------------------- | --------------- |
-| exact ticker         | 6,251           |
-| exact name           | 4,363           |
-| fuzzy name           | 73              |
-| **unresolved** | **2,075** |
-
-![Universe funnel](/assets/images/research/data-cleaning/03-universe-funnel.png)
-
-12,762 listings down to 7,892 operating companies. Roughly 38% of what the vendor called US equities
-is something I wouldn't want to trade as a stock.
-
-The same EDGAR crawl gives me SIC codes, which map to sectors — that's the right panel, and it's a
-free byproduct rather than a separate job.
+There is one trap here that I nearly walked into. `exchange` is a **current** attribute, not a
+point-in-time one. Fannie Mae and Freddie Mac were NYSE blue chips and S&P 500 members until 2010;
+today they trade OTC. Filtering to major exchanges would have deleted their entire NYSE history —
+discarding a company's past because of its later fate, which is precisely the bias I'm trying to
+remove. The filter includes OTC deliberately.
 
 ---
 
 ## Problem 4: the adjusted price trap
 
-This is the subtle one, and the one that actually changed my results.
+This is the subtle one, and the one that changed my results the first time around.
 
-Every vendor's "adjusted close" is **back-adjusted**. When a stock splits 2-for-1, the price halves
-overnight — you didn't lose anything, you own twice as many shares, but a raw chart would show a 50%
-crash that never happened. So vendors go back and rewrite all the earlier prices. Same for
-dividends.
+Every vendor's "adjusted close" is **back-adjusted**. When a stock splits 2-for-1 the price halves
+overnight — you didn't lose anything, you own twice as many shares — so vendors rewrite all the
+earlier prices to keep the series continuous. Same for dividends.
 
 This is necessary. Without it your returns are wrong.
 
-**But the rewriting uses the future.** To know what Apple's 2003 price should be adjusted to, you
-need every split and dividend from 2003 until today. So the number stored for 2003 could not have
-been known in 2003.
+**But the rewriting uses the future.** To know what Apple's 1998 price should be adjusted to, you
+need every split and dividend from 1998 until today. The number stored for 1998 could not have been
+known in 1998.
 
 That's harmless when you take **differences**, because a return is a ratio and the adjustment factor
-sits in both the top and the bottom:
+appears in both numerator and denominator. It is **not** harmless when you use the price on its own,
+because every stock carries a different future factor.
 
-|                             | Jan 2             | Jan 3  | return |
-| --------------------------- | ----------------- | ------ | ------ |
-| what Apple really traded at | $14.80 | $15.10   | +2.03% |        |
-| adjusted (both ÷ 67)       | $0.2216 | $0.2261 | +2.03% |        |
+![AAPL — the three adjustment states](/assets/images/research/data-cleaning/04-aapl-adjustment-states.png)
 
-Same answer. The 67 divides out.
+Apple on 2 January 1998 traded at **$16.25**. Fully adjusted, that same bar reads **$0.122** — a
+factor of 133, from 112× of splits and two decades of dividends.
 
-It is **not** harmless when you use the price on its own, because every stock carries a different
-future factor.
+Sort your universe by price and 1998 Apple sits among the penny stocks. And ask *why* its number is
+so small: because it split 112× afterwards. Splits happen to stocks that went up.
 
-> Apple on 2 January 2003 reads **$0.22** in an adjusted series. It traded at **$14.80**.
+> So "cheap" quietly becomes **"this stock was about to do well."** That's future information
+> sitting in a column that looks like an ordinary price.
 
-Sort your universe by price and 2003 Apple sits down among the penny stocks. And ask *why* its number
-is so small — because it split 67× afterwards. Splits happen to stocks that went up.
+The amber line shows what actually happened on the tape, cliffs and all — those four drops are the
+2000, 2005, 2014 and 2020 splits. The blue line is what a naive backtest sees. They converge at the
+right edge exactly as they must, because the most recent bar has no future left to adjust for.
 
-So "cheap" quietly becomes **"this stock was about to do well."** That's future information sitting
-in a column that looks like an ordinary price.
+### What changed in the rebuild
 
-![Price level distortion by year](/assets/images/research/data-cleaning/04-price-level-distortion.png)
+Last time, reconstructing the real price was a project: download every split event, then multiply
+each date by every split ratio dated after it, then validate four different ways.
 
-The left panel is the measurement. 2003 rows are priced about 2× below reality, decaying to exactly
-1.00 by 2021 — which is the giveaway, because a row at the end of the panel has no future left to be
-adjusted for. Across the whole panel, 41.9% of rows differ by more than 10% between the two prices.
-
-The right panel is the part that annoyed me most. I had a $5 minimum price filter, meant to keep
-genuinely cheap stocks out. Run on adjusted prices, **it does the opposite of its job**: it let in
-6.62% of rows that were really trading under $5, and threw out 4.63% that were really above it. It
-excluded 2003 Apple for the crime of splitting later, while admitting real penny stocks whose
-adjusted history got inflated by later reverse splits.
-
-### Fixing it
-
-Two distortions, and they come apart separately.
-
-**Dividends were free.** The vendor returns *two* price fields and I'd been keeping the wrong one:
-
-| field        | adjusted for         | AAPL 2003-01-02 |
-| ------------ | -------------------- | --------------- |
-| `close`    | splits only          | 0.26429         |
-| `adjClose` | splits and dividends | 0.22155         |
-
-Switching to the first removes the dividend half at zero cost.
-
-**Splits needed one download.** 11,302 split events across 3,760 symbols. Then for any date, multiply
-by every split ratio dated after it:
+This time the vendor ships all three states in the same row — split-adjusted OHLCV, a fully adjusted
+close, and an unadjusted close. Two factors recover everything:
 
 ```
-real price(t) = vendor close(t) × every split ratio after t
+split_factor = close_split / close_raw       div_factor = close_adj / close_split
 ```
 
-![AAPL: reconstructed price vs adjusted close](/assets/images/research/data-cleaning/05-aapl-nominal-vs-adjusted.png)
+So the panel carries all three and nobody has to remember the algebra at the call site.
 
-Apple is a good test because its history is well known and it has 56× of splits after 2003. The
-reconstruction gives **$14.80** for 2 January 2003, which is right. The two lines converge at the
-right edge exactly as they should — no future left to adjust for.
+**And this time it's verifiable.** Corporate actions arrive as a separate table, so the price data
+can be checked against an independent record of what happened:
 
-I checked it four ways before trusting it: against known prices (Apple $14.80, Microsoft $53.72),
-against known corporate actions (five cumulative split factors, all exact), against structural
-invariants that must hold by construction, and with a falsification test on the core assumption. The
-build script refuses to write a file if that last one fails.
+| check                                               | result                                   |
+| --------------------------------------------------- | ---------------------------------------- |
+| raw close == vendor unadjusted close                | exact                                    |
+| adjusted close == vendor adjusted close             | exact                                    |
+| split ratios agree with the actions table within 1% | **99.25%** of 9,728 matched splits |
+| split ratios agree to floating-point exactness      | **70.78%**                         |
 
-### The rule I now follow
+The ~0.75% that disagree are mostly reverse splits the vendor logged but never applied to its own
+prices. I know they exist, I know how many, and I know which tickers. On the previous dataset the
+adjustment was a black box and this table could not have been produced at all.
 
-| what you're doing                                               | which price              |
-| --------------------------------------------------------------- | ------------------------ |
-| returns, volatility, labels — anything that's a**ratio** | adjusted close           |
-| price**levels** — filters, rankings, factors             | reconstructed real price |
+### The thing that nearly slipped through
+
+The naive split factor — just dividing adjusted close by raw close — is **noise**.
+
+Prices are stored to three decimals. On a 1998 Apple bar whose adjusted close is $0.117, that's
+0.4% of quantization, and the ratio wobbles every single day. On AAPL the "split factor" appears to
+change on **4,986 of 7,189 bars** — for a company with four splits.
+
+Feed that into a raw-price reconstruction and up to 0.7% of garbage leaks into every deep-history
+open, high, low, and volume. It's small enough to never look wrong and large enough to matter at
+the scale of a daily bar.
+
+The fix is to recover the step function the factor actually is: segment on recorded split dates,
+take each segment's median. It reproduces the real ratios exactly — 4.0 for Apple's 2020 split,
+0.125 for GE's 1-for-8 reverse split, 10.0 for Nvidia's 2024 split.
+
+There's an honest residual. I de-noised the split factor and **not** the dividend factor, which
+carries the same quantization — non-monotone on 21.6% of bars, median error 0.0016%, p99 0.047%,
+and worse on sub-$1 names. It touches the adjusted open/high/low but not the adjusted close, so
+anything close-driven is unaffected. It's documented rather than fixed, because fixing it changes
+the price series and that should be a deliberate decision rather than a side effect.
+
+### The rule I follow
+
+| what you're doing                                               | which price          |
+| --------------------------------------------------------------- | -------------------- |
+| returns, volatility, labels — anything that's a**ratio** | fully adjusted close |
+| price**levels** — filters, rankings, factors             | raw close            |
 
 Or: **differences are safe, levels are not.**
 
-There's a sting in the tail here. Share volume is back-adjusted too — Apple's 2003 volume reads 182
-million shares when 3.26 million actually traded. Nobody thinks of a share count as "adjusted," which
-is exactly why I missed it for weeks after fixing the price. Same mechanism, same fix, and it's why
-the rule above is written about *fields* and not about *prices*.
+And the sting in the tail, which is the same trap wearing a different hat: **share volume is
+back-adjusted too.** Apple's 1998 volume reads 718 million shares; 6.4 million actually traded.
+Nobody thinks of a share count as "adjusted," which is exactly why I missed it for weeks the first
+time.
+
+It's worse than it looks, because split-adjusted volume is raw volume divided by that same split
+factor — and the split factor is *measurably* predictive of the future. On this panel its Spearman
+correlation with forward 5-year returns is **−0.37 to −0.46**. Any cross-sectional feature built on
+adjusted volume levels is carrying a future-return proxy.
+
+The clean answer is dollar volume, which is split-invariant by construction: a split quarters the
+price and quadruples the shares, so the product is untouched.
 
 ---
 
 ## Problem 5: data that's simply wrong
 
-Price feeds contain impossible values. Prices of 9.75e15. An adjusted close 10,000× off the real one.
-A split ratio of 1-for-15,464.
+Price feeds contain impossible values, and left alone they manufacture enormous fake returns. The
+panel drops listings with a single-day move beyond ±500%, or more than 20 days beyond ±50%. 639
+listings go.
 
-Left alone these manufacture enormous fake returns, so there are filters during the price pull —
-non-positive prices, absurd magnitudes, listings with physically impossible daily moves, dates where
-fewer than 50 names traded.
-
-Then during the price reconstruction, two classes get **no reconstructed price at all**, which means
-they fail any price filter and drop out of everything. That's deliberate: a missing price can never
-accidentally become a traded position.
-
-The threshold for "this vendor data contradicts itself" is 5%, and I set it by looking at the
-distribution rather than picking a round number. Benign rounding noise sits under 1%; genuine
-corruption jumps by factors of 100 to 10,000. 5% is the empty gap between the two populations.
-
-I mention that because my first attempt used 0.1%, which quarantined 62% of the data **including
-Apple**. The threshold was cutting into the healthy population, not the broken one. Worth measuring
-before choosing.
-
-About 4.4% of rows end up without a reconstructed price. That's the intended cost.
+What survives looks like equities. Bars with a >100% move have a median raw close of **$2.00**,
+against **$13.78** panel-wide — the extreme tail is concentrated in penny stocks, which is where it
+belongs, rather than smeared across the whole dataset in a way that would indicate broken
+adjustments.
 
 ### The one I haven't solved
 
-The corrupt-data filter drops listings with a single-day move beyond ±500%, or more than 20 days
-beyond ±50%.
+**Companies that actually collapse look exactly like corrupt data.**
 
-**Companies that actually collapse look exactly like that.**
+So that filter may be removing real disasters along with real corruption — which is the
+survivorship problem from Problem 1, sneaking back in through a side door. The price and liquidity
+filters exclude most such names anyway, so the exposure is probably small. I haven't measured it.
+It's on the list.
 
-So this filter may be removing real disasters along with real corruption — which is the survivorship
-problem from Problem 1, sneaking back in through a side door. The price and liquidity filters exclude
-most such names anyway, so the exposure is probably small, but I haven't measured it. It's on the
-list.
+---
+
+## Point-in-time index membership
+
+One thing this rebuild has that the first didn't: S&P 500 membership as of any date, reconstructed
+from quarterly snapshots plus individual add/remove events.
+
+![S&P 500 constituents per session](/assets/images/research/data-cleaning/05-sp500-members-per-session.png)
+
+It holds at 500–505 members per session across the entire history, which is the sanity check.
+
+The number that matters is the other one: **1,165 distinct tickers have been S&P 500 members at
+some point, against 503 today.** Screening on today's constituent list would mean backtesting 1999
+with the winners of 2026 — one of the purest survivorship traps available, and an easy one to walk
+into because a current-members list is the easiest thing in the world to obtain.
 
 ---
 
 ## What you end up with
 
-![Tradable universe](/assets/images/research/data-cleaning/06-tradable-universe.png)
+![Tradable universe by year](/assets/images/research/data-cleaning/06-tradable-universe.png)
 
-Clean operating companies, above $5, at a few liquidity floors.
+Common stock, above $5 raw, inside a $30M–$250M median dollar-volume band: **778 names in 2000, 964
+in 2010, 1,549 in 2025**.
 
-The thing worth noticing is the drift. A **fixed dollar** volume floor doesn't hold still — dollar
-volumes inflate, so $25M a day admits about 340 names in 2004 and 1,660 by 2026. Nearly five times
-as many. That's not the market getting five times bigger; it's the yardstick shrinking. Either report
-it or switch to a percentile rank.
+The growth is partly an illusion, and it's the same class of mistake as the adjusted-price trap. A
+**fixed dollar** volume floor doesn't hold still — dollar volumes inflate over time, so the same
+$30M admits steadily more names each year. That's the yardstick shrinking, not the market tripling.
+Either report it or switch to a percentile rank.
 
 ---
 
 ## What this dataset still can't do
 
-**No shares outstanding**, anywhere. Which means **market cap cannot be computed at all**. Daily
-volume and share price are the only size proxies available, and they're not the same thing.
+**No shares outstanding**, so **market cap cannot be computed at all**. Daily dollar volume and
+share price are the only size proxies available, and they aren't the same thing.
 
-**No fundamentals.** EDGAR is used here purely for company identity — no earnings, revenue, or book
-value.
+**No fundamentals** in this build. The source has them; I haven't pulled them.
 
 **No bid/ask quotes**, so trading costs have to be modelled rather than measured. That turned into
 its own project.
 
-**Survivorship is only clean from about 2016.** Repeating it because it's the one I'd most want a
-reader to take away.
+**History starts 1998-01-02.** The index-membership table reaches back to 1957, but there are no
+prices to join against before 1998.
 
 ---
 
@@ -339,15 +346,16 @@ securities I knew about going in, and they were mostly a matter of doing the wor
 
 The two that actually changed results were the ones where **the data was correct and I was using it
 wrong**. Adjusted close isn't a bug — it's the right tool for returns and the wrong tool for levels,
-and nothing warns you when you cross that line. Same with share volume. Same, probably, with things
-I haven't found yet.
+and nothing warns you when you cross that line. Share volume is the same trap wearing a disguise,
+and I walked into it twice.
 
-And the delisted-list gap is the one that stings, because I'd checked survivorship, satisfied myself
-it was handled, and moved on. I only caught it because a chart looked wrong — not because a test
-failed. There wasn't a test.
+But the one that stings is the delisted-list gap, because I had checked survivorship, satisfied
+myself it was handled, and moved on. I only caught it because a chart looked wrong — not because a
+test failed. **There wasn't a test.**
 
-So the habit I'd keep: when a number looks fine, ask what it would look like if it were broken. If
-you can't tell the two apart, you haven't checked it yet.
+So the habit I'd keep, and the thing that shaped this entire rebuild: when a number looks fine, ask
+what it would look like if it were broken. If you can't tell those two apart, you haven't checked it
+yet. Every chart above exists because I can state what it would look like if the data were wrong.
 
 ## Code Repository
 
