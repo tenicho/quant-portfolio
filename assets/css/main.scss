@@ -1,0 +1,12 @@
+---
+search: false
+---
+
+@charset "utf-8";
+
+// Override the theme's default page width (1280px) before its variables
+// partial sets it with !default.
+$max-width: 1800px;
+
+@import "minimal-mistakes/skins/{{ site.minimal_mistakes_skin | default: 'default' }}"; // skin
+@import "minimal-mistakes"; // main partials
