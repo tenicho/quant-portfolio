@@ -1,8 +1,5 @@
----
-layout: single
-title: "Rules-Based Momentum"
-permalink: /strategies/rules-based-momentum/
----
+# 12-1 Momentum on the S&P 500
+
 I wanted to see whether I could build a risk-adjusted trading strategy — a modified 12-1
 momentum model — around a simple observation: **the S&P 500 does a good job of ranking
 companies deservedly.** Over and over in my own investing the index has been right about which
@@ -153,10 +150,9 @@ Everywhere the report describes the universe in size language, read it as a liqu
 This is the largest gap between the stated thesis and the implemented rule, and no result here
 resolves it.
 
-One related trap worth stating, since it would have made the screen worse: the panel's `volume`
+One related trap worth stating, since it would have made the screen worse: the panel's volume
 column is split-adjusted, and its level leaks forward returns — a stock that split later reads
-as having traded more today. All liquidity work uses the raw `dollar_volume` column instead.
-`AGENT_HANDOFF.md` documents that and the other data rules the code depends on.
+as having traded more today. All liquidity work uses raw dollar volume instead.
 
 Also absent: fundamentals, bid/ask spreads, and any risk-free rate series.
 
