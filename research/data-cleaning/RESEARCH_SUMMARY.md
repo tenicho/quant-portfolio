@@ -19,16 +19,16 @@ of these problems are invisible until they've already ruined a backtest.
 
 ## What's in it
 
-|                    |                                                                                          |
-| ------------------ | ---------------------------------------------------------------------------------------- |
-| Coverage           | 1998-01-02 to 2026-07-31, 7,188 trading sessions                                         |
-| Rows               | 41,804,033 daily bars                                                                    |
-| Listings           | 19,023                                                                                   |
-| Delisted listings  | 13,288 —**70% of the panel**                                                      |
-| Securities tracked | 21,936, of which 15,628 are delisted                                                     |
-| Source             | [Sharadar](https://sharadar.com) — prices, corporate actions, metadata, index membership |
+|                       |                                                                |
+| --------------------- | -------------------------------------------------------------- |
+| Coverage              | 1998-01-02 to 2026-07-31, 7,188 trading sessions               |
+| Rows                  | 41,804,033 daily bars                                          |
+| Listings              | 19,023                                                          |
+| Delisted listings     | 13,288 — **70% of the panel**                             |
+| Securities tracked    | 21,936, of which 15,628 are delisted                           |
+| Source                | [Sharadar](https://sharadar.com) — prices, corporate actions, metadata, index membership |
 
-![Listings priced per session](/assets/images/research/data-cleaning/01-listings-per-session.png)
+![Listings priced per session](figures/01-listings-per-session.png)
 
 That curve is the first thing I check on any equity dataset, and it's the cheapest lie detector
 there is. It should **fall** — 7,888 listings in 1998, down to a trough of 4,906 in 2017, then the
@@ -88,14 +88,14 @@ outcome, and deleting it from the sample makes everything look better than it wa
 **13,288 of 19,023 listings here stop trading before the panel ends. 70% of the panel.** And they
 are spread across the whole history, not bunched into recent years:
 
-![Delistings per year](/assets/images/research/data-cleaning/02-delistings-per-year.png)
+![Delistings per year](figures/02-delistings-per-year.png)
 
 A median year sees 432 delistings, ranging from 274 (2014) to 1,299 (2023). That's a plausible
 shape for US equities. The previous dataset had roughly 40 for an entire *decade*.
 
 The same fact from the other side — how much of each session's universe eventually dies:
 
-![Live listings that later stopped trading](/assets/images/research/data-cleaning/03-live-listings-that-died.png)
+![Live listings that later stopped trading](figures/03-live-listings-that-died.png)
 
 **82.7% of the listings trading in 1998 eventually stopped trading.** Still 60.0% for 2010. That
 population — the one a survivor-only dataset silently removes — is the majority of the early panel,
@@ -183,7 +183,7 @@ That's harmless when you take **differences**, because a return is a ratio and t
 appears in both numerator and denominator. It is **not** harmless when you use the price on its own,
 because every stock carries a different future factor.
 
-![AAPL — the three adjustment states](/assets/images/research/data-cleaning/04-aapl-adjustment-states.png)
+![AAPL — the three adjustment states](figures/04-aapl-adjustment-states.png)
 
 Apple on 2 January 1998 traded at **$16.25**. Fully adjusted, that same bar reads **$0.122** — a
 factor of 133, from 112× of splits and two decades of dividends.
@@ -215,12 +215,12 @@ So the panel carries all three and nobody has to remember the algebra at the cal
 **And this time it's verifiable.** Corporate actions arrive as a separate table, so the price data
 can be checked against an independent record of what happened:
 
-| check                                               | result                                   |
-| --------------------------------------------------- | ---------------------------------------- |
-| raw close == vendor unadjusted close                | exact                                    |
-| adjusted close == vendor adjusted close             | exact                                    |
+| check | result |
+| ----- | ------ |
+| raw close == vendor unadjusted close | exact |
+| adjusted close == vendor adjusted close | exact |
 | split ratios agree with the actions table within 1% | **99.25%** of 9,728 matched splits |
-| split ratios agree to floating-point exactness      | **70.78%**                         |
+| split ratios agree to floating-point exactness | **70.78%** |
 
 The ~0.75% that disagree are mostly reverse splits the vendor logged but never applied to its own
 prices. I know they exist, I know how many, and I know which tickers. On the previous dataset the
@@ -250,10 +250,10 @@ the price series and that should be a deliberate decision rather than a side eff
 
 ### The rule I follow
 
-| what you're doing                                               | which price          |
-| --------------------------------------------------------------- | -------------------- |
-| returns, volatility, labels — anything that's a**ratio** | fully adjusted close |
-| price**levels** — filters, rankings, factors             | raw close            |
+| what you're doing                                              | which price             |
+| -------------------------------------------------------------- | ----------------------- |
+| returns, volatility, labels — anything that's a**ratio** | fully adjusted close    |
+| price**levels** — filters, rankings, factors            | raw close               |
 
 Or: **differences are safe, levels are not.**
 
@@ -299,7 +299,7 @@ It's on the list.
 One thing this rebuild has that the first didn't: S&P 500 membership as of any date, reconstructed
 from quarterly snapshots plus individual add/remove events.
 
-![S&P 500 constituents per session](/assets/images/research/data-cleaning/05-sp500-members-per-session.png)
+![S&P 500 constituents per session](figures/05-sp500-members-per-session.png)
 
 It holds at 500–505 members per session across the entire history, which is the sanity check.
 
@@ -312,7 +312,7 @@ into because a current-members list is the easiest thing in the world to obtain.
 
 ## What you end up with
 
-![Tradable universe by year](/assets/images/research/data-cleaning/06-tradable-universe.png)
+![Tradable universe by year](figures/06-tradable-universe.png)
 
 Common stock, above $5 raw, inside a $30M–$250M median dollar-volume band: **778 names in 2000, 964
 in 2010, 1,549 in 2025**.
