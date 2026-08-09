@@ -10,10 +10,10 @@ Systematic trading strategies covering rules-based and machine learning approach
 
 A systematic momentum strategy using quantitative signals, portfolio construction rules, and historical backtesting.
 
-[Read more →](/strategies/rules-based-momentum/)
+[Read more →]({{ '/strategies/rules-based-momentum/' | relative_url }})
 
 ## ML Trend + Momentum
 
 A supervised machine learning approach combining trend detection and momentum factors.
 
-[Read more →](/strategies/ml-trend-momentum/)
+[Read more →]({{ '/strategies/ml-trend-momentum/' | relative_url }})

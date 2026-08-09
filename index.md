@@ -11,10 +11,10 @@ title: "Quantitative Research Portfolio"
 
 Systematic strategies covering rules-based and machine learning approaches to trend and momentum.
 
-[Explore →](/strategies/){: .btn .btn--primary}
+[Explore →]({{ '/strategies/' | relative_url }}){: .btn .btn--primary}
 
 ## Research Notes
 
 Methodology notes on the data and modeling challenges behind systematic strategy research.
 
-[Explore →](/research/){: .btn .btn--primary}
+[Explore →]({{ '/research/' | relative_url }}){: .btn .btn--primary}
