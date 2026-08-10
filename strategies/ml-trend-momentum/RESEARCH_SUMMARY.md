@@ -1,5 +1,8 @@
-# Cross-Sectional Forward-Return Ranking on US Equities
-
+---
+layout: single
+title: "ML Trend + Momentum"
+permalink: /strategies/ml-trend-momentum/
+---
 I wanted to know whether ordinary daily price data still carries enough signal to build a swing
 trading strategy I could actually run myself, without watching a screen during market hours.
 

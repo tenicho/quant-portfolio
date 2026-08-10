@@ -1,5 +1,8 @@
-# How I Estimate Round-Trip Trading Costs
-
+---
+layout: single
+title: "Transaction Costs"
+permalink: /research/transaction-costs/
+---
 ## The goal
 
 For the trading strategies I'm building, I need to estimate the round-trip cost of a trade — the

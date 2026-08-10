@@ -1,5 +1,8 @@
-# 12-1 Momentum on the S&P 500
-
+---
+layout: single
+title: "Rules-Based Momentum"
+permalink: /strategies/rules-based-momentum/
+---
 I wanted to see whether I could build a risk-adjusted trading strategy — a modified 12-1
 momentum model — around a simple observation: **the S&P 500 does a good job of ranking
 companies deservedly.** Over and over in my own investing the index has been right about which

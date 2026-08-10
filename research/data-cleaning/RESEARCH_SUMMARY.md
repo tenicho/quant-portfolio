@@ -1,5 +1,8 @@
-# Building a Clean US Equity Dataset
-
+---
+layout: single
+title: "Data Cleaning"
+permalink: /research/data-cleaning/
+---
 ## The goal
 
 Before any of the modelling was worth doing, I had to build a dataset I actually trusted.
