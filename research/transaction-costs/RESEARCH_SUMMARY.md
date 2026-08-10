@@ -1,262 +1,190 @@
----
-layout: single
-title: "Transaction Costs"
-permalink: /research/transaction-costs/
----
-A plain-language walkthrough of how spread estimators work, why they break, and where the
-boundaries in `cost_model.py` come from. `README.md` is the method; this is the reasoning behind it.
+# How I Estimate Round-Trip Trading Costs
+
+## The goal
+
+For the trading strategies I'm building, I need to estimate the round-trip cost of a trade — the
+spread cost. For heavily traded names (AAPL, TSLA, etc.) it's close to negligible, but for
+lower-liquidity stocks (low ADV) it can be meaningful. Either way these are real costs, and
+including them is an important part of development. Because of the gap between models/theory and
+reality, there are unknowns and errors all over the place — so I wanted an approach tied to some
+logic, and in some cases deliberately overestimating. Along the way I went down the rabbit hole
+of the different methods people use for this.
+
+My biggest constraint is the data I decided to use: **daily OHLCV**. The best method would be to
+source actual bid-ask data at my entry and exit times, but with how far back my historical data
+goes, that database would get out of hand — and data quality becomes its own potential issue I
+didn't want to take on.
+
+**Why not just use a ballpark estimate?** Personal decision. I wanted to learn about spread
+models, and I wanted my estimate tied to some logic — a numerical approximation that responds to
+liquidity and volatility. That said, I understand it's an estimator and I'm not stating it as the
+truth. It's a doing-the-best-I-can-with-what-I-have situation.
 
 ---
 
-## 1 · What we are trying to estimate
+## First attempt: Corwin–Schultz (CS)
 
-At any moment a stock has two prices:
+I began with an apparently common method, Corwin–Schultz, which uses only the high and low over
+pairs of consecutive days. Plotting its estimates across ADV buckets — the black line is a
+ballpark approximation of what these stocks really cost to trade, which I use as the reality
+check throughout:
 
-- the **bid** — what buyers are currently offering
-- the **ask** — what sellers are currently asking
+![Corwin-Schultz claimed costs stay near 50-70 bp across every ADV bucket while approximate real cost falls from ~90 bp to ~2 bp](figures/01-corwin-schultz-fails.png)
 
-You buy at the ask and later sell at the bid, so you lose the gap between them. That gap is the
-**spread**, and it is the main cost of trading.
+It overestimates the spread cost in almost every bucket — and, ironically, *underestimates* in
+the one place spreads really are wide (microcaps). It basically outputs the same answer
+everywhere.
 
-| | spread | as % of price |
-|---|---|---|
-| Apple at $135 | ~1 cent | **0.007%** |
-| a $4 microcap | ~4 cents | **1.0%** |
+The reasons come down to how short-sighted the model is:
 
-Roughly 150× different. So cost depends almost entirely on how heavily traded a stock is.
+- It only takes in **2 days of data** per estimate, using only the high and low. So if a stock
+  moves a lot in a day, the range is wide and the model reads that as spread — even if the stock
+  is very liquid and the true spread is a penny.
+- Within 2 days you can also get extreme **overnight moves**, and since the model assumes
+  continuous trading, those jumps get counted into the spread estimate too.
 
-![What the model charges: median cost by ADV bucket, with the middle 50% shaded](figures/05-cost-by-liquidity.png)
-
-**The problem: our data has no bid or ask.** Only open, high, low, close and volume per day. The
-spread has to be inferred from those, or sidestepped.
-
----
-
-## 2 · The fingerprint every estimator hunts for: bid-ask bounce
-
-Imagine a stock whose true value is **$10.00 and never moves all week**. Bid $9.90, ask $10.10.
-
-The closing price each day is simply whatever the *last trade* happened to be:
-
-| day | last trade was a… | recorded close |
-|---|---|---|
-| Mon | buy | $10.10 |
-| Tue | sell | $9.90 |
-| Wed | buy | $10.10 |
-| Thu | sell | $9.90 |
-
-Recorded returns: −2%, +2%, −2%. **The stock never moved, but the tape zig-zags.**
-
-That zig-zag is caused purely by the spread, and its size reveals the spread's size. Every
-estimator — Roll, Corwin–Schultz, EDGE — is trying to measure that zig-zag and separate it from
-the stock's genuine movement.
+So you could state it plainly: **CS is sensitive to volatility and does not respond to
+liquidity.** (On my panel: correlation with volatility +0.58, correlation with liquidity
+−0.002 — essentially zero.) I like the simplicity of it, but it's easy to see how it's
+short-sighted and doesn't represent what's actually going on.
 
 ---
 
-## 3 · Corwin–Schultz
+## Second attempt: EDGE
 
-**Inputs: high and low only.** Over one day, and over two consecutive days.
+Next I considered the EDGE method. It takes in all four OHLC prices and looks at how price
+movements behave *across* consecutive days, rather than reading a single range. Plotting it
+against the same ADV buckets:
+
+![EDGE tracks approximate real costs well at the illiquid end, then flattens into a noise floor above ~$20M ADV](figures/02-edge-resolution-limit.png)
+
+It does clearly better at the lower ADV levels when compared against the real approximations. The
+main reasons it works better:
+
+- It treats overnight jumps and daily movement as **random noise to be averaged away** rather
+  than counting them as spread. Genuine price movement is random day to day, so multiplied across
+  days and averaged over a long sample, it cancels toward zero — the law of large numbers. The
+  spread pushes the open and close the same way every day, so it survives the averaging.
+- It uses a much larger sample: I calibrate it on pooled 21-day windows across thousands of
+  stocks, not a rolling 2-day read.
+
+**In summary:**
+
+- **CS** uses minimal data over a micro-horizon (2 days) → volatile and overestimated.
+- **EDGE** uses richer data over a long, pooled horizon → stable, filtered, and accurate at the
+  illiquid end.
+
+---
+
+## But EDGE has a ceiling — the sample-size problem
+
+As the visual above shows, the estimates for higher ADV buckets are still heavily impacted by
+daily movement, and that contributes error. To smooth the error well below the spread being
+estimated (~0.01% for a megacap), the number of samples needed gets extreme. How many is governed
+by one ratio — the stock's daily volatility **σ** (how much it typically moves in a day) against
+its spread **S** (the thing being estimated):
 
 ```
-β = [ln(H₁/L₁)]² + [ln(H₂/L₂)]²      two separate single-day ranges
-γ = [ln(H₁₂/L₁₂)]²                    ONE range spanning both days
-
-S = 2(e^α − 1)/(1 + e^α)              α built from β and γ
+days needed  ≈  (σ/S)⁴
 ```
 
-**The idea: volatility grows with time, a spread does not.** Over two days true price variance
-doubles, but the spread is baked into any range you measure exactly once, however long it is.
-Compare "two one-day ranges" against "one two-day range" and the volatility part scales
-predictably while the spread part does not — the difference should isolate the spread.
+Averaging shrinks noise slowly (with the square root of the sample size), and the estimator works
+in squared terms, which is where the brutal fourth power comes from. Worked through for three
+real cases:
 
-**Why it fails.** Everything is a range. When the stock actually moved, β and γ are both dominated
-by real movement and the spread is a tiny residual between two large numbers. It also assumes
-volatility is constant across the two days; when it isn't, the residual goes the wrong way, which
-is why CS routinely returns **negative** spreads that get clipped to zero.
+|          | spread S | daily vol σ | σ/S | days needed = (σ/S)⁴                         |
+| -------- | -------- | ------------ | ---- | ---------------------------------------------- |
+| microcap | 100 bp   | 200 bp       | 2    | 2⁴ =**16**                              |
+| $25M ADV | 25 bp    | 190 bp       | 7.6  | 7.6⁴ ≈**3,300** (~13 years)            |
+| megacap  | 1.5 bp   | 180 bp       | 120  | 120⁴ ≈**207 million** (~830,000 years) |
 
-**Measured on our panel:**
+Volatility is roughly the same for every stock (~2% a day), but the spread collapses 100× as
+liquidity rises — so the ratio explodes, and the fourth power turns it into a data requirement
+that no amount of history can meet. I verified this rule with simulations (fake price data with a
+spread I chose, checking whether EDGE recovers it): with 3,000 days of data it nails spreads down
+to ~50 bp and fails below, exactly as predicted. Worse, below its limit it doesn't degrade
+gracefully — it makes numbers up.
 
-| | |
-|---|---|
-| correlation with liquidity | **−0.002** |
-| correlation with volatility | **+0.580** |
-| claimed cost, >$500M ADV megacap | **52 bp** (reality: 1–2 bp) |
-
-Once volatility is partialled out, CS separates the entire ADV spectrum by **18 bp**. It is a
-volatility estimator wearing a spread estimator's name. **Not used anywhere in this model.**
-
-![Corwin-Schultz barely responds to liquidity: claimed cost stays near 50-70 bp across every ADV bucket while real cost falls from ~90 bp to ~2 bp](figures/01-corwin-schultz-fails.png)
+**So EDGE gets used only where the sample-size rule says it can work: below $10M ADV**, where my
+last measured anchor lands at $7.08M.
 
 ---
 
-## 4 · EDGE
+## Bridging the gap to the liquid end
 
-**Inputs: all four prices — and critically, across consecutive days.**
+For the very liquid end (≥ $100M ADV), no daily-bar estimator can measure spreads that small —
+but nobody needs one to. What these stocks cost to trade is directly observable market structure,
+the same common knowledge that made CS's ~50 bp megacap claim obviously wrong on its face. So I
+pin fixed anchors there: **20 / 8 / 4 / 2 bp at $100M / $500M / $2B / $10B ADV**.
 
-```
-m = (h + l)/2                    mid-range, a stand-in for the "true" price
+That leaves the stretch between **$7M and $100M ADV**, where I have no trustworthy measurement on
+either method. There I **interpolate** between the last EDGE anchor and the first fixed one
+(log-linearly, which keeps the curve smooth and always decreasing). So yeah — interpolating
+between the two seems lazy, but assuming liquidity is the main driver of cost falling from $7M to
+$100M, it's the best estimate I can make without things getting out of hand. Not the strongest
+logic in the model, but it's where I landed without spending a lot more time on it.
 
-S² ≈ −4·E[(oₜ − mₜ)(oₜ − mₜ₋₁)]  −  4·E[(cₜ − mₜ)(cₜ − mₜ₊₁)]
-                          ↑                            ↑
-                     yesterday                    tomorrow
-```
-
-**The idea.** The open and close are each *one specific trade*, so each prints at either the bid or
-the ask. With no spread they'd scatter randomly around the true price; with a spread they sit
-systematically ±S/2 away from it.
-
-**Why multiplying across days is the whole trick.** The true price movement from yesterday to today
-is random noise. Multiply two terms containing independent noise, average over many days, and
-**the noise cancels to zero**. The spread appears in both terms with a consistent relationship, so
-it **survives the averaging**.
-
-> Averaging destroys the volatility and preserves the spread.
-
-This is why a within-day-only formula cannot work: inside a single bar there is nothing to average
-against. (A proposed formula using only same-day terms tested *worse* than CS — correlation with
-volatility +0.677, with liquidity −0.028.)
-
-EDGE is a real improvement: correlation with liquidity **−0.420** against CS's −0.002.
-
-![EDGE resolves the illiquid tail, then flattens into a noise floor: its correlation with liquidity within a bucket goes from strongly negative at the low end to roughly zero above ~$20M ADV](figures/02-edge-resolution-limit.png)
+![The calibrated cost curve: EDGE-measured anchors below $10M ADV, fixed market-structure anchors above $100M, and an interpolated stretch between](figures/03-cost-curve.png)
 
 ---
 
-## 5 · How much data you need — the (σ/S)⁴ rule
-
-Averaging only works if you average enough. Here is how much.
-
-The signal is size **S²**. The noise being averaged away is size **σ²**. Averaging N days shrinks
-noise by √N. So the spread becomes visible when:
+## Putting it together: the final formula
 
 ```
-S² > σ²/√N        →        N > (σ/S)⁴
+vol_mult   = clip( σ_20 / σ_peers ,  0.75 ,  2.5 )
+
+tick_floor = 10,000 × $0.01 / price           # one tick, expressed in bp
+
+cost_bps   = max( base_spread(ADV) × vol_mult ,  tick_floor ) × 0.85
 ```
 
-**A fourth power.** Double the volatility-to-spread ratio and you need **16×** the data.
+Reading it inside-out:
 
-| | spread S | daily vol σ | σ/S | days needed |
-|---|---|---|---|---|
-| microcap | 100 bp | 200 bp | 2 | **16** |
-| $25M ADV | 25 bp | 190 bp | 7.6 | **3,300** |
-| megacap | 1.5 bp | 180 bp | 120 | **207,000,000** |
+**`base_spread(ADV)`** — the stock's baseline, looked up on the calibrated curve above.
 
-**This is the entire reason for the $10M ADV cutoff.** Nothing about EDGE changes across that line.
-What changes is whether you have enough data to average the volatility away.
+**`× vol_mult` — the volatility multiplier.** Volatile names genuinely trade wider, so the
+baseline gets multiplied by how volatile the stock is *relative to peers of similar liquidity*:
+σ_20 is its trailing 20-day volatility, σ_peers is the median among names in the same ADV decile
+that day. A ratio of 1.0 means "typical for its tier." The ratio is **clipped**, not rescaled —
+1.6 stays 1.6, but 4.0 becomes 2.5 and 0.5 becomes 0.75. The cap is the important part: it's what
+stops volatility from taking over the estimate, which is exactly the failure mode CS showed.
 
-### Verified by simulation
+![How much volatility can move the cost at each liquidity level: from 0.75x for calm names to the 2.5x cap for very volatile ones](figures/04-volatility-multiplier.png)
 
-Generate fake prices containing a spread we *chose*, hand EDGE only the four bar prices, see if it
-finds the answer. The rule predicted every row:
+**`max( … , tick_floor)`** — a quoted spread can't be narrower than one tick ($0.01), so the cost
+is floored at a penny expressed in bp of the stock's price: 1 bp for a $100 stock, 20 bp for a $5
+stock. It only kicks in for cheap and/or very liquid names.
 
-| true spread | σ/S | days needed | given 3,000 days | EDGE said | error |
-|---|---|---|---|---|---|
-| 300 bp | 1 | 1 | ✓ | 303 bp | +1% |
-| 100 bp | 3 | 81 | ✓ | 101 bp | +1% |
-| 50 bp | 5 | 625 | ✓ | 54 bp | +8% |
-| 20 bp | 10 | 10,000 | ✗ | 16 bp | −21% |
-| 10 bp | 18 | 105,000 | ✗ | 1 bp | −94% |
-| 1 bp | 180 | 1 billion | ✗ | **13 bp** | **+1160%** |
-
-Same estimator, same code. Only the required sample size changed — by a factor of a billion.
-
-### The consequence that matters most for us
-
-Hold the true spread **fixed at 100 bp** and raise only volatility:
-
-| daily vol | σ/S | EDGE said | error |
-|---|---|---|---|
-| 1.0% | 1.0 | 103 bp | +3% |
-| 4.0% | 0.25 | 105 bp | +5% |
-| 8.0% | 0.12 | **126 bp** | **+26%** |
-| 15.0% | 0.07 | **141 bp** | **+41%** |
-
-**The spread never changed. Only volatility did — and the estimate inflated 41%.**
-
-A strategy that selects volatile names will be systematically overcharged by any bar-geometry
-estimator. Not because those stocks cost more, but because the estimator cannot separate the two.
-That is the single strongest argument for anchoring cost to **liquidity** and letting volatility
-only scale it within bounds.
-
-![How much volatility can move the cost, at each liquidity level: the multiplier ranges from 0.75x for calm names to a capped 2.5x for very volatile ones](figures/04-volatility-multiplier.png)
+**`× 0.85` — the effective-spread haircut.** According to published market-microstructure
+studies, the spread you actually pay (the *effective* spread) typically runs about **50–80% of
+the quoted spread**, because real executions capture price improvement — midpoint fills, hidden
+liquidity, resting limit orders. My entries are market-on-open auction fills, where none of that
+improvement is available, so I deliberately set the ratio *above* the published range at
+**0.85**. Overestimating on purpose, again.
 
 ---
 
-## 6 · Does pooling rescue it? Partly.
+## What the model produces
 
-Our anchors are not single 21-day readings — each is the **median of ~2 million** overlapping
-windows across thousands of stocks. Pooling that many should crush the noise.
+![What the model charges: median round-trip cost by ADV bucket, with the middle 50% shaded](figures/05-cost-by-liquidity.png)
 
-**It does, down to a point.** Same simulation, but running the model's actual procedure — 21-day
-windows, pooled, median:
+Each dot is the median round-trip cost for that liquidity tier; the gray band is the middle 50%
+within the tier, which mostly reflects the volatility multiplier spreading otherwise-similar
+stocks apart.
 
-| true spread | σ/S | pooled median | error |
-|---|---|---|---|
-| 300 bp | 1.0 | 295 bp | −2% ✓ |
-| 150 bp | 1.7 | 146 bp | −3% ✓ |
-| 100 bp | 2.0 | 97 bp | −3% ✓ |
-| 50 bp | 4.0 | 53 bp | +7% ✓ |
-| 25 bp | 7.6 | **41 bp** | **+62%** ✗ |
-| 10 bp | 18.0 | **36 bp** | **+258%** ✗ |
+**Two things I stay suspicious of:**
 
-**Pooling fixes noise. It does not fix bias.** Below roughly a 50 bp true spread the error stops
-being random scatter and becomes a systematic floor — notice the last two rows both land near
-36–41 bp whether the truth was 25 or 10. Averaging millions of readings then gives a very precise
-measurement of that floor.
-
-### What this says about our own anchors
-
-Ours are **80.4 / 75.1 / 70.4 bp**. They sit above the ~40 bp floor, so they are not pure noise.
-But the bias runs upward and grows as true spreads fall — which is very likely why they are so
-**flat** across a 4.4× range of ADV.
-
-If the true spreads are something like 100 / 70 / 45 bp, the estimator would compress them upward
-toward its floor and report roughly 80 / 75 / 70. That is exactly the pattern we see.
-
-**So the $7.08M anchor is probably too expensive**, and because the interpolated middle starts
-there, costs across $7M–$100M are likely overstated too. That is the conservative direction —
-overcharging rather than under — but it is still wrong.
+1. **The $7M–$100M stretch is interpolated, not measured** — and a majority of my trades at
+   ADV ≥ $25M land in it. It can't be improved with this data; it would take broker execution
+   reports or published effective-spread statistics.
+2. **The EDGE anchors are probably biased upward.** My three anchors came out at
+   80.4 / 75.1 / 70.4 bp across a 4.4× range of ADV — implausibly flat. Simulation shows the
+   estimator develops a floor around ~40 bp for small true spreads, and compression toward that
+   floor would produce exactly this pattern. Conservative direction (overcharging, not under),
+   but worth remembering.
 
 ---
 
-## 7 · Why a longer window doesn't fix it
+## Code Repository
 
-The fourth power cuts both ways:
-
-| window | smallest spread it can resolve (σ ≈ 200 bp) |
-|---|---|
-| 21 days | ~93 bp |
-| 60 days | ~76 bp |
-| 252 days (1 year) | ~53 bp |
-
-Quadrupling the window buys about 20 bp of resolution.
-
-**Which means the $10M–$100M gap cannot be filled with EDGE at any window length.** True spreads
-there are 20–50 bp — below what daily OHLC can resolve, full stop. That gap is not a calibration
-choice; it is a hard limit of the data.
-
-Closing it needs different data: broker TCA reports, or published effective-spread statistics by
-liquidity bucket.
-
----
-
-## 8 · So why the model looks the way it does
-
-![The calibrated cost curve: EDGE-measured anchors below $10M ADV, market-structure anchors above $100M, and an interpolated stretch in between](figures/03-cost-curve.png)
-
-| decision | reason |
-|---|---|
-| **No estimator used as the cost directly** | Bar geometry cannot separate spread from movement where the spread is small — and our strategies select volatile names, the worst case |
-| **Corwin–Schultz not used at all** | Zero correlation with liquidity (−0.002). It measures volatility |
-| **EDGE used only below $10M ADV** | Above that, `(σ/S)⁴` exceeds any window we can run |
-| **EDGE used only in aggregate** | A single 21-day reading is far too noisy; the anchor is a median of ~2M |
-| **Fixed anchors above $100M** | Observable market structure. No OHLC estimator can resolve 1 bp from daily bars |
-| **Volatility as a bounded multiplier (0.75–2.5×)** | Volatile names really do trade wider, so the effect is real — but bounding it stops volatility taking over the estimate, which is precisely how CS fails |
-| **Log-linear interpolation between anchors** | Smooth and monotone, no tier cliffs. Honest about the fact that the middle is interpolated |
-
-## The two things to stay suspicious of
-
-1. **The $7M–$100M stretch is interpolated**, and roughly two-thirds of trades at ADV ≥ $25M land
-   in it. It cannot be improved with this data.
-2. **The illiquid anchors are probably biased upward**, compressed toward the estimator's floor.
-   Conservative, but wrong — and the reason they look implausibly flat.
+[View on GitHub →](https://github.com/tenicho/transaction-costs)

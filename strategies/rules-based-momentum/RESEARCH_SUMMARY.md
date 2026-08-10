@@ -1,8 +1,5 @@
----
-layout: single
-title: "Rules-Based Momentum"
-permalink: /strategies/rules-based-momentum/
----
+# 12-1 Momentum on the S&P 500
+
 I wanted to see whether I could build a risk-adjusted trading strategy — a modified 12-1
 momentum model — around a simple observation: **the S&P 500 does a good job of ranking
 companies deservedly.** Over and over in my own investing the index has been right about which
@@ -622,3 +619,9 @@ nothing in this report is computed from it.
 | `outputs/stability_10y/sharpe_standard_errors.csv` | Sharpe ± Lo (2002) error bar, per config                                  |
 | `outputs/stability_10y/chosen_vs_spy.csv`          | the chosen config tested directly against SPY                            |
 | `report/figures/*.csv`                             | the numbers behind each figure                                             |
+
+---
+
+## Code Repository
+
+[View on GitHub →](https://github.com/tenicho/rules-based-momentum)
