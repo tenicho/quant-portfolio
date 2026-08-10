@@ -1,8 +1,5 @@
----
-layout: single
-title: "ML Trend + Momentum"
-permalink: /strategies/ml-trend-momentum/
----
+# Cross-Sectional Forward-Return Ranking on US Equities
+
 I wanted to know whether ordinary daily price data still carries enough signal to build a swing
 trading strategy I could actually run myself, without watching a screen during market hours.
 
@@ -932,3 +929,9 @@ Then execute the notebooks, which write every figure into `report/figures/`:
 
 Run the smoke test after touching `sh_regress.py` or `sh_scan.py`. It has caught real bugs cheaply
 before a long run hit them.
+
+---
+
+## Code Repository
+
+[View on GitHub →](https://github.com/tenicho/ml-trend-momentum)
