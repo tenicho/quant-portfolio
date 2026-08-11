@@ -140,15 +140,15 @@ to dialing back long exposure in bad regimes, which is really the other half of 
 
 ## Data
 
-Sharadar US equity daily panel: **41.8M raw rows** across **19,024 tickers**, 1998-01-02 to
+Sharadar US equity daily panel: **41.8M raw rows** across **19,023 tickers**, 1998-01-02 to
 2026-07-31.
 
 **There is no survivorship bias.** The panel carries every ticker that ever listed, not only those
-alive today — **70% of the 19,024 tickers are flagged delisted**, and their bars are real: the last
+alive today — **70% of the 19,023 tickers are flagged delisted**, and their bars are real: the last
 bar *is* the delisting. A model tested only on companies that survived would be reading a rigged
 tape, because the failures are exactly the names a momentum ranker can get badly wrong. Delisting
 records were cross-checked against SEC EDGAR Form 25 filings in the data pipeline that builds this
-panel .
+panel.
 
 The enriched feature panel is **23.6M rows × 51 columns**. (Feature computation is restricted to
 tickers that ever reached \$10M average dollar volume, purely because enriching all 41.8M rows won't
