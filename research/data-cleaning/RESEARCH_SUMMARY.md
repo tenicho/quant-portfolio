@@ -1,6 +1,6 @@
 ---
 layout: single
-title: "Data Cleaning"
+title: "US Equity Data Pipeline (1998–2026)"
 permalink: /research/data-cleaning/
 ---
 ## The goal

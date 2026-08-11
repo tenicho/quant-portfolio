@@ -6,13 +6,13 @@ permalink: /research/
 
 Notes on the methodology and data challenges underlying systematic strategy research.
 
-## Transaction Costs
+## Round-Trip Trading Cost Estimator
 
 Modeling execution costs, slippage, and market impact in realistic backtests.
 
 [Read more →]({{ '/research/transaction-costs/' | relative_url }})
 
-## Data Cleaning
+## US Equity Data Pipeline (1998–2026)
 
 Handling missing data, corporate actions, and survivorship bias in financial datasets.
 

@@ -1,6 +1,6 @@
 ---
 layout: single
-title: "ML Trend + Momentum"
+title: "ML Trend & Momentum Cross-sectional Equity Model"
 permalink: /strategies/ml-trend-momentum/
 ---
 I wanted to know whether ordinary daily price data still carries enough signal to build a swing

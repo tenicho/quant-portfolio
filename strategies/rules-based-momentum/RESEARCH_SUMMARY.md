@@ -1,6 +1,6 @@
 ---
 layout: single
-title: "Rules-Based Momentum"
+title: "Rules-Based Momentum — Modified 12-1"
 permalink: /strategies/rules-based-momentum/
 ---
 I wanted to see whether I could build a risk-adjusted trading strategy — a modified 12-1

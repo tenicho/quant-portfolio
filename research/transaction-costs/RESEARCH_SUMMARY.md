@@ -1,6 +1,6 @@
 ---
 layout: single
-title: "Transaction Costs"
+title: "Round-Trip Trading Cost Estimator"
 permalink: /research/transaction-costs/
 ---
 ## The goal
