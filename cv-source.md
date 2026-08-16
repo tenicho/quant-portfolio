@@ -136,11 +136,13 @@ A machine-learning model that ranks the liquid US equity universe by predicted 4
 
 **Results (out of sample)**
 
-- Rank-IC of +0.039 (t = 2.07 after correcting for overlapping labels), against +0.049 in development
+- Rank-IC of +0.044 (t = 2.30 after correcting for overlapping labels), against +0.049 in development
+- 47 independent samples out of sample against 228 in development
 - Traded book returned +37.4%/yr against SPY's +22.6%. $1 grew to $3.02 versus the index's $2.03
 - Took real risk to get there: 27.4% volatility against the market's 15.2%, and a -26.5% drawdown against -18.8%
 - Risk-adjusted, a three-way tie: excess Sharpe of 1.17 for the model, 1.18 for the index, 1.12 for the MTUM momentum ETF
 - Separates decisively from naive momentum: sorting on 12-month momentum alone, with identical universe, costs, and schedule, returned +0.25%/yr against the model's +15.9% in development
+- Month-by-month IC shows where the model struggles: sharp drawdowns and stretches when market-wide momentum breaks down. The most negative months line up with the March 2023 regional banking stress and the April 2025 tariff selloff.
 
 **Conclusion:** the model generates real signal from a minimal data set, beating the index on absolute return in both development and holdout. That return comes at a cost. Concentration and higher volatility mean deeper drawdowns, and on a risk-adjusted basis the strategy lands roughly level with the index rather than ahead of it.
 
@@ -259,7 +261,7 @@ A stock research platform combining a custom in-house screener, AI-assisted stoc
 
 **Features built:**
 
-- **Theia Picks:** a bootstrapped smart search router that turns a natural-language prompt into a custom stock screener, a stock list, or both, along with the reasoning behind them. The router selects among three paths: the in-house screener infrastructure, web search, or the model's own knowledge.
+- **Theia Picks:** a bootstrapped smart search router that turns a natural-language prompt into a custom stock screener, a stock list, or both, along with the reasoning behind them. The router decides which tools to use for each request, drawing on one or more of three: the in-house screener, web search, and the model's own knowledge.
 - **Pulse:** a condensed market overview. Aggregates macro data from multiple providers (CPI, PPI, commodity indexes, housing indexes) alongside major index movement (S&P, NASDAQ, Dow), then feeds it into an AI model to produce a short, readable summary of the market, including movements that commonly go overlooked.
 - **AI Wiki:** generates stock analysis by combining processed stock data (fundamentals, technical indicators, growth metrics, analyst ratings) with recent relevant news events, curated into a single easy-to-consume format.
 - **Stock Screener:** custom screener infrastructure allowing users to build filters across a wide set of data points.
@@ -270,6 +272,13 @@ A stock research platform combining a custom in-house screener, AI-assisted stoc
 
 - Built the ingestion and post-processing layer for third-party market data: trailing twelve-month (TTM) calculations, quarter-over-quarter growth tracking, and extensive data cleaning
 - Bootstrapped a retrieval-augmented generation (RAG) system housed in S3, where post-processed data is embedded and stored, then retrieved as a data source for the AI features
+
+**Model evaluation**
+
+- Built a repeatable process for evaluating the LLM-assisted features, scoring outputs 0 to 5 on fidelity, insight, prioritization, and usability
+- Curated a prompt set for each feature and task, ran 100+ prompts per candidate model, and used a higher-tier model as the judge against the rubric
+- Compared candidate models across providers on score, latency, and cost, including Claude Haiku and Sonnet, DeepSeek, and AWS Nova Pro and Nova Lite
+- Used the results to choose which model runs each task instead of defaulting to one model everywhere
 
 **Stack:** Native Swift (iOS) with push notifications; Python backend; AWS Amplify, RDS (MySQL), Bedrock (AI features), Lambda, S3, EventBridge, SNS, CloudWatch, IAM roles.
 
@@ -312,9 +321,10 @@ A publication making part of my own stock research process publicly available. I
 
 **Selected write-ups (highest readership):**
 
-- [Crocs (CROX): Undervalued, Misunderstood, and Ready for a Breakout](https://tenichols94.substack.com/p/crocs-crox-undervalued-misunderstood)
-- [Comstock Holding Companies, Inc. (CHCI): An Asset-Light Cash Machine with a Governance Twist](https://tenichols94.substack.com/p/comstock-holding-companies-inc-chci)
-- [Adobe (ADBE): When the Market Panics, Do the Financials Agree?](https://tenichols94.substack.com/p/adobe-adbe-when-the-market-panics)
+- Crocs (CROX): Undervalued, Misunderstood, and Ready for a Breakouthttps://tenichols94.substack.com/p/crocs-crox-undervalued-misunderstood
+- Comstock Holding Companies, Inc. (CHCI): An Asset-Light Cash Machine with a Governance Twisthttps://tenichols94.substack.com/p/comstock-holding-companies-inc-chci
+- Adobe (ADBE): When the Market Panics, Do the Financials Agree?
+  https://tenichols94.substack.com/p/adobe-adbe-when-the-market-panics
 
 ---
 
@@ -421,6 +431,7 @@ Diploma in Auto Body Repair | July 2013
 - AWS Bedrock
 - Agentic system design: tool selection and resource routing by the model
 - LLM application development: prompt-driven tool use, natural-language-to-query systems
+- LLM evaluation: rubric design, model-as-judge scoring, cost and latency benchmarking across providers
 - Retrieval-augmented generation (RAG): embedding and retrieval over processed datasets
 - Combining structured data with generative models to produce analysis
 

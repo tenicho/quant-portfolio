@@ -601,13 +601,29 @@ All four series are measured over the identical 874 sessions, 2023-01-05 to 2026
 
 ![Development vs holdout](figures/holdout_02_dev_vs_holdout.png)
 
-**The signal held, but weakly.** Rank-IC +0.039 against +0.049 in development — a 19% decay — with a
-Newey-West t of **2.07**. On the scale used earlier that is right *at* the conventional line, not in
-the "strong" range the development t of 5.58 sits in. It is the weakest significance anywhere in this
-project, and it is what three and a half years of data buys you: the ranking is still there and still
-pointing the right way, but a single mediocre stretch would have pushed it under the bar. Net return
-per trade at the top 1% roughly doubled, and the selectivity sweep rose monotonically all the way to
-the very top of the ranking — better behaved out of sample than in.
+**The signal held.** Rank-IC **+0.044** against +0.049 in development — a 9% decay — with a Newey-West
+t of **2.30**, scored on sessions with a complete 40-day forward window. Net return per trade at the
+top 1% roughly doubled, and the selectivity sweep rose monotonically all the way to the very top of
+the ranking — better behaved out of sample than in.
+
+![Holdout rank-IC by month](figures/holdout_05_ic_monthly_clean.png)
+
+That t of 2.30 is the weakest significance figure in this document. Two things hold it down, and
+neither is the signal weakening.
+
+**A 40-day label buys very few independent looks.** The t-statistic is the mean IC divided by its
+standard error, and that error shrinks with the number of *independent* observations, not the number
+of days. Consecutive days share 39 of their 40 forward days, so the holdout's 896 sessions collapse
+to roughly **47 independent observations** across 3.6 years. Development had 228. Same signal, a
+quarter of the resolution — which is most of the gap between t = 5.58 and t = 2.30.
+
+**The model ranks badly coming off market bottoms.** The negative months are not scattered; they are
+three episodes — the SVB regional-bank scare, the autumn 2023 correction, and the April 2025
+Liberation Day tariff selloff. Each is a sharp drawdown followed by a rebound led by the beaten-down,
+high-volatility names this model ranks last. Over those stretches the bottom decile returned
+**+13.8%** against the top decile's +7.1%; everywhere else in the holdout that same bottom decile
+returned **−1.1%**. The book carries no regime filter and no stop, so it absorbs these drawdowns in
+full and then takes time to readjust to the regime that follows.
 
 **The portfolio drew level.** Excess Sharpe of **1.17 against SPY's 1.18 and MTUM's 1.12** is a
 three-way tie. The book won handsomely on total return — 3.02x against MTUM's 2.36x and SPY's 2.03x
@@ -685,7 +701,7 @@ In descending order of confidence:
    costs charged on entry, embargoed walk-forward, benchmarks built with the same execution
    machinery as the books.
 2. **The model ranks stocks better than chance, and the ranking persisted.** 21 standard deviations
-   above random selection in development; rank-IC +0.039 at t = 2.07 in the holdout.
+   above random selection in development; rank-IC +0.044 at t = 2.30 in the holdout.
 3. **The original goal was met.** A tradable swing model driven by ordinary OHLC data plus VIX,
    executable entirely outside market hours, on a once-a-month cycle.
 4. **Concentration is the dominant risk lever, and it is measurable.** Ruin over 36 months runs 8.2%

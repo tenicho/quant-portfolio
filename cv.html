@@ -339,11 +339,13 @@ search: false
 
     <p class="subgroup-label">Results (out of sample)</p>
     <ul>
-      <li>Rank-IC of +0.039 (t = 2.07 after correcting for overlapping labels), against +0.049 in development</li>
+      <li>Rank-IC of +0.044 (t = 2.30 after correcting for overlapping labels), against +0.049 in development</li>
+      <li>47 independent samples out of sample against 228 in development</li>
       <li>Traded book returned +37.4%/yr against SPY's +22.6%. $1 grew to $3.02 versus the index's $2.03</li>
       <li>Took real risk to get there: 27.4% volatility against the market's 15.2%, and a -26.5% drawdown against -18.8%</li>
       <li>Risk-adjusted, a three-way tie: excess Sharpe of 1.17 for the model, 1.18 for the index, 1.12 for the MTUM momentum ETF</li>
       <li>Separates decisively from naive momentum: sorting on 12-month momentum alone, with identical universe, costs, and schedule, returned +0.25%/yr against the model's +15.9% in development</li>
+      <li>Month-by-month IC shows where the model struggles: sharp drawdowns and stretches when market-wide momentum breaks down. The most negative months line up with the March 2023 regional banking stress and the April 2025 tariff selloff.</li>
     </ul>
 
     <p class="conclusion"><strong>Conclusion:</strong> the model generates real signal from a minimal data set, beating the index on absolute return in both development and holdout. That return comes at a cost. Concentration and higher volatility mean deeper drawdowns, and on a risk-adjusted basis the strategy lands roughly level with the index rather than ahead of it.</p>
@@ -475,7 +477,7 @@ search: false
 
     <p class="subgroup-label">Features built</p>
     <ul>
-      <li><strong>Theia Picks:</strong> a bootstrapped smart search router that turns a natural-language prompt into a custom stock screener, a stock list, or both, along with the reasoning behind them. The router selects among three paths: the in-house screener infrastructure, web search, or the model's own knowledge.</li>
+      <li><strong>Theia Picks:</strong> a bootstrapped smart search router that turns a natural-language prompt into a custom stock screener, a stock list, or both, along with the reasoning behind them. The router decides which tools to use for each request, drawing on one or more of three: the in-house screener, web search, and the model's own knowledge.</li>
       <li><strong>Pulse:</strong> a condensed market overview. Aggregates macro data from multiple providers (CPI, PPI, commodity indexes, housing indexes) alongside major index movement (S&amp;P, NASDAQ, Dow), then feeds it into an AI model to produce a short, readable summary of the market, including movements that commonly go overlooked.</li>
       <li><strong>AI Wiki:</strong> generates stock analysis by combining processed stock data (fundamentals, technical indicators, growth metrics, analyst ratings) with recent relevant news events, curated into a single easy-to-consume format.</li>
       <li><strong>Stock Screener:</strong> custom screener infrastructure allowing users to build filters across a wide set of data points.</li>
@@ -487,6 +489,14 @@ search: false
     <ul>
       <li>Built the ingestion and post-processing layer for third-party market data: trailing twelve-month (TTM) calculations, quarter-over-quarter growth tracking, and extensive data cleaning</li>
       <li>Bootstrapped a retrieval-augmented generation (RAG) system housed in S3, where post-processed data is embedded and stored, then retrieved as a data source for the AI features</li>
+    </ul>
+
+    <p class="subgroup-label">Model evaluation</p>
+    <ul>
+      <li>Built a repeatable process for evaluating the LLM-assisted features, scoring outputs 0 to 5 on fidelity, insight, prioritization, and usability</li>
+      <li>Curated a prompt set for each feature and task, ran 100+ prompts per candidate model, and used a higher-tier model as the judge against the rubric</li>
+      <li>Compared candidate models across providers on score, latency, and cost, including Claude Haiku and Sonnet, DeepSeek, and AWS Nova Pro and Nova Lite</li>
+      <li>Used the results to choose which model runs each task instead of defaulting to one model everywhere</li>
     </ul>
 
     <p><strong>Stack:</strong> Native Swift (iOS) with push notifications; Python backend; AWS Amplify, RDS (MySQL), Bedrock (AI features), Lambda, S3, EventBridge, SNS, CloudWatch, IAM roles.</p>
@@ -669,6 +679,7 @@ search: false
         <li>AWS Bedrock</li>
         <li>Agentic system design: tool selection and resource routing by the model</li>
         <li>LLM application development: prompt-driven tool use, natural-language-to-query systems</li>
+        <li>LLM evaluation: rubric design, model-as-judge scoring, cost and latency benchmarking across providers</li>
         <li>Retrieval-augmented generation (RAG): embedding and retrieval over processed datasets</li>
         <li>Combining structured data with generative models to produce analysis</li>
       </ul>
