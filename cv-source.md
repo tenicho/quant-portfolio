@@ -252,42 +252,48 @@ Identified that the company had no standardized process for vetting new product 
 
 ## MOBILE APPLICATIONS
 
-### Stock Screener: Trade Ideas, *Co-Developer*
+### AI Stock Trading Agents, *Co-Developer*
 
-*iOS (native Swift) | Python backend | AWS | Launched December 2024*
-[App Store](https://apps.apple.com/us/app/stock-screener-trade-ideas/id6738607499) | 29 five-star reviews
+*iOS (native Swift/SwiftUI) | Python backend | AWS, Bedrock, Strands Agents | Launched December 2024*
+[App Store](https://apps.apple.com/us/app/ai-stock-trading-agents/id6738607499) | 29 five-star reviews
 
-A stock research platform combining a custom in-house screener, AI-assisted stock and market analysis, and a reference wiki for US equities. Co-developed across the full stack, working on AI infrastructure, the iOS front end, and the Python backend rather than owning a single layer.
+An agent-first investing platform where scheduled AI agents research markets, manage transparent paper portfolios, and explain their decisions. Co-developed across the full stack: the multi-agent runtime, the research tool layer, retrieval infrastructure, the native iOS experience, and the Python/AWS backend.
 
-**Features built:**
+**Agent platform**
 
-- **Theia Picks:** a bootstrapped smart search router that turns a natural-language prompt into a custom stock screener, a stock list, or both, along with the reasoning behind them. The router decides which tools to use for each request, drawing on one or more of three: the in-house screener, web search, and the model's own knowledge.
-- **Pulse:** a condensed market overview. Aggregates macro data from multiple providers (CPI, PPI, commodity indexes, housing indexes) alongside major index movement (S&P, NASDAQ, Dow), then feeds it into an AI model to produce a short, readable summary of the market, including movements that commonly go overlooked.
-- **AI Wiki:** generates stock analysis by combining processed stock data (fundamentals, technical indicators, growth metrics, analyst ratings) with recent relevant news events, curated into a single easy-to-consume format.
-- **Stock Screener:** custom screener infrastructure allowing users to build filters across a wide set of data points.
-- **Stock Wiki:** reference data for publicly traded U.S. equities: fundamentals, technical indicators, analyst ratings, growth metrics, and news events.
-- **Watchlist:** user-created watchlists.
+- Built a multi-agent research and paper-trading system where specialized agents investigate differentiated market signals and a parent Signal Fusion agent combines their findings. Agents evaluate holdings and new opportunities on a schedule, and produce traceable trades, evaluations, and decision histories.
+- Users create an agent by describing an investment thesis and setting explicit risk controls, portfolio limits, and schedules. The system translates that into a bounded agent definition without the user writing prompts or understanding agent orchestration.
+- Each agent workspace exposes its portfolio, performance, holdings, trades, evaluations, and supporting evidence. Chat is grounded in the agent's own history and current market data, and is read-only: it cannot trade or modify the agent.
 
-**Data and retrieval work:**
+**Tools and retrieval**
 
-- Built the ingestion and post-processing layer for third-party market data: trailing twelve-month (TTM) calculations, quarter-over-quarter growth tracking, and extensive data cleaning
-- Bootstrapped a retrieval-augmented generation (RAG) system housed in S3, where post-processed data is embedded and stored, then retrieved as a data source for the AI features
+- Built a first-party financial research tool layer instead of relying on generic vendor integrations, covering fundamentals and valuation, prices and technical indicators, earnings and analyst signals, insider activity, news and web research, macro indicators, and portfolio and decision history
+- Developed a structured intelligence layer where specialist agents convert findings into reusable, queryable records that other agents and Signal Fusion retrieve instead of repeating the same research
+- Preprocessed data into token-efficient formats so agents work from focused context rather than large raw dumps, reducing inference cost and improving signal quality
+
+**Data and backend**
+
+- Built ingestion and post-processing pipelines for third-party market data: trailing twelve-month (TTM) calculations, quarter-over-quarter growth tracking, normalization, and data cleaning
+- Developed scheduled AWS workflows for agent research, portfolio assessment, notifications, and intelligence generation
+- MySQL for structured state and queryable findings; S3 for larger traces, artifacts, playbooks, and embedding catalogs
 
 **Model evaluation**
 
-- Built a repeatable process for evaluating the LLM-assisted features, scoring outputs 0 to 5 on fidelity, insight, prioritization, and usability
-- Curated a prompt set for each feature and task, ran 100+ prompts per candidate model, and used a higher-tier model as the judge against the rubric
-- Compared candidate models across providers on score, latency, and cost, including Claude Haiku and Sonnet, DeepSeek, and AWS Nova Pro and Nova Lite
-- Used the results to choose which model runs each task instead of defaulting to one model everywhere
+- Built a repeatable process for evaluating LLM-assisted workflows, scoring outputs 0 to 5 on fidelity, insight, prioritization, and usability
+- Curated task-specific prompt sets, ran 100+ prompts per candidate model, and used a higher-capability model as the judge against a consistent rubric
+- Compared models across providers on output quality, latency, and cost, including Claude, DeepSeek, and Amazon Nova
+- Selected models by workflow instead of defaulting to one across the platform, and added workflow-specific model budgets, usage accounting, and token-efficient retrieval to control inference cost
 
-**Stack:** Native Swift (iOS) with push notifications; Python backend; AWS Amplify, RDS (MySQL), Bedrock (AI features), Lambda, S3, EventBridge, SNS, CloudWatch, IAM roles.
+**Earlier product systems:** Theia Picks (natural-language stock discovery routed across the in-house screener, web search, and model knowledge), Pulse (AI market summaries from macro data and index movement), Stock Screener, Watchlist, AI Wiki, and Stock Wiki. These formed the original product and established the data and AI infrastructure the agent platform runs on. Most have been removed from the primary navigation.
+
+**Stack:** Native Swift and SwiftUI, Combine, Swift concurrency; Python; AWS Amplify, Lambda, RDS (MySQL), S3, EventBridge, Cognito, AppSync, SNS/APNs, CloudWatch, IAM, Amazon Bedrock, Strands Agents.
 
 ---
 
 ### Stock Chart Trading Game, *Solo Developer*
 
 *iOS (native) | Python | Launched February 1, 2026*
-[App Store](https://apps.apple.com/us/app/stock-chart-trading-game/id6758588241) | 4.5 average across 6 ratings
+[App Store](https://apps.apple.com/us/app/stock-chart-trading-game/id6758588241) | 4.6 average across 10 ratings
 
 A game that tests chart-reading skills against real historical market data. Users predict whether each chart is bullish or bearish; because every chart comes from an actual past event, players get genuine feedback on how those setups would have played out.
 
@@ -310,14 +316,14 @@ A fish weight estimator built to solve a personal need: getting a weight estimat
 
 ### Capital Curiosity, *Founder & Author* | March 2025 to Present
 
-*Substack | 379 subscribers*
+*Substack | 390 subscribers*
 https://substack.com/@tenichols94
 
 A publication making part of my own stock research process publicly available. I actively manage my own portfolio, and I write up the analysis I do on companies I'm looking into, as much for my own justification that I understand a business as for readers.
 
 - Publish original equity research write-ups drawn from my live analysis process
 - Cover notable developments in current holdings and in other companies worth writing about
-- Grew to 379 subscribers since first post on March 19, 2025
+- Grew to 390 subscribers since first post on March 19, 2025
 
 **Selected write-ups (highest readership):**
 
@@ -409,7 +415,7 @@ Diploma in Auto Body Repair | July 2013
 
 **Cloud & Backend (AWS)**
 
-- AWS Amplify, Bedrock, Lambda, RDS (MySQL), S3, EventBridge, Simple Notification Service (SNS), CloudWatch, IAM roles
+- AWS Amplify, Bedrock, Lambda, RDS (MySQL), S3, EventBridge, Cognito, AppSync, Simple Notification Service (SNS), CloudWatch, IAM roles
 - Python backend development
 - Database design and management
 
@@ -428,10 +434,13 @@ Diploma in Auto Body Repair | July 2013
 
 **AI Application Development**
 
-- AWS Bedrock
+- AWS Bedrock; Strands Agents
+- Multi-agent system design: specialized agents, parent fusion agent, scheduled autonomous workflows
 - Agentic system design: tool selection and resource routing by the model
+- Custom tool layer development for LLM agents
 - LLM application development: prompt-driven tool use, natural-language-to-query systems
 - LLM evaluation: rubric design, model-as-judge scoring, cost and latency benchmarking across providers
+- Inference cost control: token-efficient retrieval, per-workflow model budgets, usage accounting
 - Retrieval-augmented generation (RAG): embedding and retrieval over processed datasets
 - Combining structured data with generative models to produce analysis
 
@@ -446,8 +455,8 @@ Diploma in Auto Body Repair | July 2013
 
 **Mobile Development**
 
-- Native iOS development in Swift
-- Push notifications
+- Native iOS development in Swift and SwiftUI; Combine, Swift concurrency
+- Push notifications (APNs)
 - Shipped applications on the Apple App Store (solo and co-developed)
 
 **Test Engineering**
