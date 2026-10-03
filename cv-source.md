@@ -1,7 +1,7 @@
 # TAYLOR NICHOLS
 
 **Email:** tenichols94@gmail.com
-**Location:** Raleigh, NC (open to relocation or remote)
+**Location:** Cary, NC (open to relocation or remote)
 **LinkedIn:** https://www.linkedin.com/in/taylor-nichols-ab1976135/
 **Quant Research Portfolio:** https://tenicho.github.io/quant-portfolio/
 **GitHub:** https://github.com/tenicho
@@ -25,7 +25,7 @@
 #### Product Owner | January 2021 - 2022
 
 - Led work execution in a group of 8 engineers across electrical, controls, and mechanical disciplines
-- Transitioned the Design Verification group to Scrum methodology
+- After I transitioned the Design Verification group to Scrum, we increased project output year over year and expanded the cross-functional team
 - Prioritized backlog to deliver high-value features to stakeholders quickly
 - Collaborated with stakeholders to establish priorities and development roadmaps
 
@@ -34,11 +34,15 @@
 - Serve as lab test engineer for three product lines: tool changers, material removal, and force/torque sensors. Products are deployed in industrial automation, logistics automation, and medical applications
 - Design the test approach for new product introduction (NPI) projects, configure the equipment, run the tests, analyze the data, and document and publish the findings
 - Make the pass/fail determination against specification, which gates product release
-- Developed specification standards across all product lines, setting the example for how product specifications are written
-- Performed CFD simulations to support thermal and fluid projects, spanning three areas:
+- My test results changed designs, caught failures before release, and held up releases. Vibration testing found adhesion failures, insufficient torque specs, and subpar electrical connections. Wet lab testing found O-rings that wear prematurely and flow performance that wasn't sufficient.
+- Developed specification standards across all product lines, setting the example for how product specifications are written. These standards quantified the performance our products should deliver, which made test pass/fail criteria objective instead of subjective.
+- Performed CFD simulations in SolidWorks Flow Simulation to support thermal and fluid projects, spanning three areas:
   - Steady-state energy loss and pressure drop simulations
   - Dynamic turbine analysis
   - Combined flow performance and thermal / heat exchanger analysis at the system level
+- CFD drove design decisions. I used it before prototypes were made to check whether a design would pass its design requirements.
+  - Impulse turbine: for a high-speed, low-torque impulse turbine designed to finish fine edges, I ran dynamic studies in SolidWorks to estimate RPM and torque. The prototype spun up to 60,000 RPM and removed material effectively, as designed.
+  - Water-cooled motor thermal study: during development of a new water-cooled electric motor, overheating limited performance and duty cycle. I simulated the motor's heat generation, the pressure drop across the cooling jacket, and the total heat the jacket could remove, covering both conduction and convection.
 
 **Environmental & reliability testing**
 
@@ -71,7 +75,8 @@
 **Instrumentation & test systems built**
 
 - Built and configured data acquisition (DAQ) systems using IEPE accelerometer channels, four-wire RTD and thermocouple setups, fast analog voltage differentials, and four-wire high-resolution resistance measurement
-- Built a custom leak-down test setup in LabVIEW
+- Built a custom pressure and vacuum leak-down test setup in LabVIEW that measures leaks down to 5 SCCM
+- Analyzed DAQ data in Python
 - Led the development of the wet lab (fluid testing room), covering electrical, programming, and mechanical work, running on a B&R PLC:
   - Closed-loop pressure drop test system using a Coriolis flow meter and pressure transducers
   - Life cycle water test station with overflow safety cutoffs
@@ -136,7 +141,7 @@ A machine-learning model that ranks the liquid US equity universe by predicted 4
 
 **Results (out of sample)**
 
-- Rank-IC of +0.044 (t = 2.30 after correcting for overlapping labels), against +0.049 in development
+- Rank-IC of +0.044 out of sample (t = 2.30) against +0.049 in development (t = 5.58), both corrected for overlapping labels
 - 47 independent samples out of sample against 228 in development
 - Traded book returned +37.4%/yr against SPY's +22.6%. $1 grew to $3.02 versus the index's $2.03
 - Took real risk to get there: 27.4% volatility against the market's 15.2%, and a -26.5% drawdown against -18.8%
@@ -246,6 +251,7 @@ Identified that the company had no standardized process for vetting new product 
   - Discounted cash flow (DCF) calculator
   - Sensitivity analysis, with project development time, gross margin, and short- and long-term sales projections as input variables
 - Standardized the NPI project vetting process company-wide; the tool was adopted and implemented
+- Almost every NPI project after the tool was introduced went through it
 - Awarded performance stock units (PSUs) following implementation
 
 ---
@@ -276,6 +282,7 @@ An agent-first investing platform where scheduled AI agents research markets, ma
 - Built ingestion and post-processing pipelines for third-party market data: trailing twelve-month (TTM) calculations, quarter-over-quarter growth tracking, normalization, and data cleaning
 - Developed scheduled AWS workflows for agent research, portfolio assessment, notifications, and intelligence generation
 - MySQL for structured state and queryable findings; S3 for larger traces, artifacts, playbooks, and embedding catalogs
+- Built REST APIs
 
 **Model evaluation**
 
@@ -286,7 +293,7 @@ An agent-first investing platform where scheduled AI agents research markets, ma
 
 **Earlier product systems:** Theia Picks (natural-language stock discovery routed across the in-house screener, web search, and model knowledge), Pulse (AI market summaries from macro data and index movement), Stock Screener, Watchlist, AI Wiki, and Stock Wiki. These formed the original product and established the data and AI infrastructure the agent platform runs on. Most have been removed from the primary navigation.
 
-**Stack:** Native Swift and SwiftUI, Combine, Swift concurrency; Python; AWS Amplify, Lambda, RDS (MySQL), S3, EventBridge, Cognito, AppSync, SNS/APNs, CloudWatch, IAM, Amazon Bedrock, Strands Agents.
+**Stack:** Native Swift and SwiftUI, Combine, Swift concurrency; Python; AWS Amplify, Lambda, RDS (MySQL), S3, EventBridge, Cognito, AppSync, SNS/APNs, CloudWatch, IAM, REST APIs, Amazon Bedrock, Strands Agents.
 
 ---
 
@@ -327,8 +334,10 @@ A publication making part of my own stock research process publicly available. I
 
 **Selected write-ups (highest readership):**
 
-- Crocs (CROX): Undervalued, Misunderstood, and Ready for a Breakouthttps://tenichols94.substack.com/p/crocs-crox-undervalued-misunderstood
-- Comstock Holding Companies, Inc. (CHCI): An Asset-Light Cash Machine with a Governance Twisthttps://tenichols94.substack.com/p/comstock-holding-companies-inc-chci
+- Crocs (CROX): Undervalued, Misunderstood, and Ready for a Breakout
+  https://tenichols94.substack.com/p/crocs-crox-undervalued-misunderstood
+- Comstock Holding Companies, Inc. (CHCI): An Asset-Light Cash Machine with a Governance Twist
+  https://tenichols94.substack.com/p/comstock-holding-companies-inc-chci
 - Adobe (ADBE): When the Market Panics, Do the Financials Agree?
   https://tenichols94.substack.com/p/adobe-adbe-when-the-market-panics
 
@@ -401,6 +410,7 @@ Diploma in Auto Body Repair | July 2013
 - Proficient in Python, MATLAB, Swift
 - Experience in R, C++, VBA, and Fortran
 - SQL / MySQL
+- Git and GitHub
 
 **Python Libraries**
 
@@ -478,14 +488,18 @@ Diploma in Auto Body Repair | July 2013
   - Fast analog voltage differentials
   - Four-wire high-resolution resistance
 - LabVIEW; B&R PLC programming
+- Pressure and vacuum leak-down testing to 5 SCCM
+- DAQ data analysis in Python
 - Instrumentation: Coriolis flow meters, thermal mass flow meters, pressure transducers
 - Communication protocols: serial, Modbus, EtherCAT, Ethernet
 - Programming microcontrollers and microprocessors
 
 **Simulation & Design**
 
-- CFD simulation: steady-state energy loss / pressure drop, dynamic turbine analysis, combined flow and thermal system analysis
+- CFD simulation in SolidWorks Flow Simulation: steady-state energy loss / pressure drop, dynamic turbine analysis, combined flow and thermal system analysis
+- Impulse turbine dynamic study (RPM and torque estimation); water-cooled motor thermal study (heat generation, cooling jacket pressure drop, conduction and convection)
 - SolidWorks
+- Geometric dimensioning and tolerancing (GD&T)
 - Designed and analyzed electrical circuits, communication systems, motors, and a Bluetooth speaker
 
 **Mechanical & Manufacturing**
@@ -496,6 +510,7 @@ Diploma in Auto Body Repair | July 2013
 
 **Financial Modeling & Analysis**
 
+- Excel
 - Discounted cash flow (DCF) modeling
 - Sensitivity analysis
 - Gross margin analysis; return on investment (ROI)
